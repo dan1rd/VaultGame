@@ -5,7 +5,13 @@ interface GameState {
   currentScene: Scene | null;
 }
 
-const createGame = async () => {
+interface Game {
+  app: Application;
+  state: GameState;
+  setScene: (newScene: Scene | null) => void;
+}
+
+const createGame = async (): Promise<Game> => {
   const app = new Application();
   await app.init({
     canvas: document.querySelector('#game') as HTMLCanvasElement,

@@ -1,23 +1,41 @@
-const getAssetsManifest = () => {
-  // TODO: Will figure out if I have some time, hardcoding for now T_T
+import { Assets } from 'pixi.js';
 
-  return {
-    bundles: [
-      {
-        name: 'vault-scene',
-        assets: [
-          { alias: 'bg', src: 'Assets/VaultScene/bg.webp' },
-          { alias: 'blink', src: 'Assets/VaultScene/blink.webp' },
-          { alias: 'door', src: 'Assets/VaultScene/door.webp' },
-          { alias: 'doorOpen', src: 'Assets/VaultScene/doorOpen.webp' },
-          { alias: 'doorOpenShadow', src: 'Assets/VaultScene/doorOpenShadow.webp' },
-          { alias: 'handle', src: 'Assets/VaultScene/handle.webp' },
-          { alias: 'handleShadow', src: 'Assets/VaultScene/handleShadow.webp' },
-          { alias: 'keypad', src: 'Assets/VaultScene/keypad.svg' },
-        ],
-      },
-    ],
-  };
+interface Asset {
+  alias: string;
+  src: string;
+}
+
+interface Bundle {
+  name: string;
+  assets: Asset[];
+}
+
+interface Manifest {
+  bundles: Bundle[];
+}
+
+const getAssetsManifest = (): Manifest => {
+  const bundles: Bundle[] = [];
+  const fileSources = Object.keys(import.meta.glob('/public/Assets/**/*.*'));
+
+  fileSources.forEach((src) => {
+    const [, , , bundleName, , assetAlias] = src.split('/');
+
+    let currentBundle = bundles.find((bundle) => bundle.name === bundleName);
+    if (!currentBundle) {
+      currentBundle = { name: bundleName, assets: [] };
+      bundles.push(currentBundle);
+    }
+
+    if (currentBundle.assets.findIndex((asset) => asset.alias === assetAlias) === -1) {
+      currentBundle.assets.push({ alias: assetAlias, src: src.replace('/public/', '') });
+    }
+  });
+
+  return { bundles };
 };
 
-export { getAssetsManifest };
+const initAssets = async () => await Assets.init({ manifest: getAssetsManifest() });
+const loadSceneAssets = async (bundleName: string) => await Assets.loadBundle(bundleName);
+
+export { initAssets, loadSceneAssets };

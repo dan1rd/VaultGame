@@ -22,7 +22,7 @@ const createVaultScene = () => {
 
   function initialize() {
     currentMS = 0;
-    const sprite = Sprite.from('bg');
+    const sprite = Sprite.from('bg.webp');
     sprite.x = window.innerWidth / 2;
     sprite.y = window.innerHeight / 2;
     sprite.anchor.set(0.5);
