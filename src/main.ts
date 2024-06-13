@@ -1,14 +1,17 @@
+import 'pixi.js/text-bitmap';
 import './style.css';
-import { Application } from 'pixi.js';
+import { createLoadingScene } from './Scenes/LoadingScene';
+import { createGame } from './core/Game';
+import { createVaultScene } from './Scenes/VaultScene';
+import { getAssetsManifest } from './core/Assets';
+import { Assets } from 'pixi.js';
 
-const initApplication = async () => {
-  const app = new Application();
-  await app.init({
-    canvas: document.querySelector('#game') as HTMLCanvasElement,
-    autoDensity: true,
-    resizeTo: window,
-    powerPreference: 'high-performance',
-  });
-};
+await Assets.init({ manifest: getAssetsManifest() });
+const game = await createGame();
 
-await initApplication();
+const loadingScene = createLoadingScene();
+game.setScene(loadingScene);
+
+await Assets.loadBundle('vault-scene');
+const vaultScene = createVaultScene();
+game.setScene(vaultScene);
