@@ -19,6 +19,7 @@ const getAssetsManifest = (): Manifest => {
   const fileSources = Object.keys(import.meta.glob('/public/Assets/**/*.*'));
 
   fileSources.forEach((src) => {
+    // todo - if there's time, refactor the parsing to be more adequate..
     const [, , , bundleName, , assetAlias] = src.split('/');
 
     let currentBundle = bundles.find((bundle) => bundle.name === bundleName);

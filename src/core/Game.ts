@@ -18,6 +18,7 @@ const createGame = async (): Promise<Game> => {
     autoDensity: true,
     resizeTo: window,
     powerPreference: 'high-performance',
+    background: '#122122',
   });
 
   // @ts-ignore
