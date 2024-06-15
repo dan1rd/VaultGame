@@ -1,20 +1,16 @@
 import { Container, Sprite } from 'pixi.js';
 import { WindowSize } from '../types/common';
 
-const isSmallResolution = (windowWidth: number) => windowWidth <= 900;
-
-const isUltraWideResolution = (windowWidth: number, windowHeight: number) =>
-  windowWidth / windowHeight >= 2.5;
-
-const getSceneScale = (size: WindowSize, bgWidth: number, bgHeight: number) => {
+const getScale = (size: WindowSize, bgWidth: number, bgHeight: number) => {
   const contain = Math.min(size.width / bgWidth, size.height / bgHeight);
   const cover = Math.max(size.width / bgWidth, size.height / bgHeight);
 
-  if (isUltraWideResolution(size.width, size.height)) {
+  const ratio = size.width / size.height;
+  if (ratio <= 1 || ratio >= 2.5) {
     return contain * 1.5;
   }
 
-  return isSmallResolution(size.width) ? contain * 1.75 : cover;
+  return cover;
 };
 
 const centerSprites = (sprites: Sprite[], parentWidth: number, parentHeight: number) => {
@@ -46,4 +42,4 @@ const centerContainer = (containers: Container[], parentWidth: number, parentHei
   });
 };
 
-export { getSceneScale, centerSprites, scaleSprites, setPivotToCenter, centerContainer };
+export { getScale, centerSprites, scaleSprites, setPivotToCenter, centerContainer };
