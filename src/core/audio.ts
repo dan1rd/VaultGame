@@ -32,11 +32,18 @@ function createAudioCollection(sounds: string[]) {
     soundInstance?.sound.resume();
   }
 
+  function setVolume(soundAlias: string, volume: number) {
+    const soundInstance = getInstance(soundAlias);
+    if (!soundInstance) return;
+
+    soundInstance.sound.volume = volume;
+  }
+
   function getInstance(soundAlias: string) {
     return collection.find((sound) => soundAlias === sound?.alias) ?? null;
   }
 
-  return { play, pause, resume };
+  return { play, pause, resume, setVolume };
 }
 
 export { createAudioCollection };

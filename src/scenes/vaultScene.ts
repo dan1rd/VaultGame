@@ -76,6 +76,7 @@ const createVaultScene = () => {
     'win.ogg',
   ]);
 
+  sounds.setVolume('bg.ogg', 0.35);
   sounds.play('bg.ogg', true);
   const vaultScene = createScene();
   vaultScene.label = 'Vault Scene';
