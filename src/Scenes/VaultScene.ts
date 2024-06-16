@@ -10,6 +10,7 @@ import {
 import { wait } from '../utils/common';
 import { Text } from 'pixi.js';
 import { MotionBlurFilter } from 'pixi-filters';
+import { createAudioCollection } from '../core/Audio';
 import gsap from 'gsap';
 
 type VaultCombination = [number, 1 | -1][];
@@ -65,7 +66,16 @@ type KeypadGroup = Group & {
 
 const createVaultScene = () => {
   let state = initializeVaultSceneState();
+  const sounds = createAudioCollection([
+    'bg.ogg',
+    'incorrectCode.ogg',
+    'spinMultiple.ogg',
+    'spinOnce.ogg',
+    'vault.ogg',
+    'win.ogg',
+  ]);
 
+  sounds.play('bg.ogg', true);
   const vaultScene = createScene();
   vaultScene.label = 'Vault Scene';
 
@@ -127,6 +137,8 @@ const createVaultScene = () => {
         state.unlockCombination[state.playerInput.currentPair];
 
       if (direction !== correctDirection) {
+        sounds.play('incorrectCode.ogg');
+
         state.unlockCombination = generateCombination();
         state.playerInput = getInitialPlayerInput();
 
@@ -154,6 +166,8 @@ const createVaultScene = () => {
     }
 
     function setDoorLockState(isLocked: boolean) {
+      sounds.play('vault.ogg');
+
       state.door.isLocked = isLocked;
 
       closedDoorGroup.visible = state.door.isLocked;
@@ -161,6 +175,9 @@ const createVaultScene = () => {
     }
 
     function winGame() {
+      sounds.pause('bg.ogg');
+      sounds.play('win.ogg');
+
       state.timer.isRunning = false;
       setDoorLockState(false);
       playShineAnimation();
@@ -168,6 +185,8 @@ const createVaultScene = () => {
     }
 
     function startNewGame() {
+      sounds.resume('bg.ogg');
+
       setDoorLockState(true);
       state = initializeVaultSceneState();
       handleGroup.angle = state.door.handleAngle;
@@ -345,6 +364,12 @@ const createVaultScene = () => {
       duration?: number;
       onComplete?: () => void;
     }) {
+      if (duration >= 1.5) {
+        sounds.play('spinMultiple.ogg');
+      } else {
+        sounds.play('spinOnce.ogg');
+      }
+
       state.door.handleAngle += spins * 60;
 
       const timeline = gsap.timeline();
