@@ -7,17 +7,25 @@ import {
   centerContainer,
   getScale,
 } from '../utils/layout';
+import { wait } from '../utils/common';
 import { Text } from 'pixi.js';
 import { MotionBlurFilter } from 'pixi-filters';
 import gsap from 'gsap';
 
-type VaultCombination = [number, -1 | 1][];
+type VaultCombination = [number, 1 | -1][];
 interface VaultSceneState {
-  totalElapsedMS: number;
+  unlockCombination: VaultCombination;
+  timer: {
+    isRunning: boolean;
+    totalElapsedMS: number;
+  };
+  playerInput: {
+    currentPair: number;
+    currentSpins: number;
+  };
   door: {
     isLocked: boolean;
     handleAngle: number;
-    unlockCombination: VaultCombination;
   };
 }
 
@@ -30,12 +38,25 @@ interface Group {
   container: Container;
 }
 
+type ClosedDoorGroup = Group & {
+  disableButtons: () => void;
+  enableButtons: () => void;
+};
+
 type ShineGroup = Group & {
   playShineAnimation: () => void;
 };
 
 type HandleGroup = Group & {
-  spinHandle: (spinCount: number, duration?: number) => void;
+  spinHandle: ({
+    spins,
+    duration,
+    onComplete,
+  }: {
+    spins: number;
+    duration?: number;
+    onComplete?: () => void;
+  }) => void;
 };
 
 type KeypadGroup = Group & {
@@ -43,12 +64,13 @@ type KeypadGroup = Group & {
 };
 
 const createVaultScene = () => {
-  const state = initializeVaultSceneState();
+  let state = initializeVaultSceneState();
 
   const vaultScene = createScene();
   vaultScene.label = 'Vault Scene';
 
-  function initialize() {
+  function start() {
+    state.timer.isRunning = true;
     const background = Sprite.from('bg.webp');
     vaultScene.addChild(background);
 
@@ -62,14 +84,18 @@ const createVaultScene = () => {
     setPivotToCenter([vaultScene]);
     centerContainer([vaultScene], window.innerWidth, window.innerHeight);
 
-    const { container: closedDoorGroup } = createClosedDoorGroup({
+    const {
+      container: closedDoorGroup,
+      disableButtons,
+      enableButtons,
+    } = createClosedDoorGroup({
       parentContainer: vaultScene,
       scaleFactor,
       onRightClick: () => {
-        spinHandle(1);
+        registerSpin(1);
       },
       onLeftClick: () => {
-        spinHandle(-1);
+        registerSpin(-1);
       },
     });
 
@@ -80,7 +106,7 @@ const createVaultScene = () => {
     openDoorGroup.x += closedDoorGroup.width - openDoorGroup.width / 2 + 150 * scaleFactor;
     openDoorGroup.visible = false;
 
-    const { spinHandle } = createHandleGroup({
+    const { container: handleGroup, spinHandle } = createHandleGroup({
       parentContainer: closedDoorGroup,
       scaleFactor,
     });
@@ -96,17 +122,71 @@ const createVaultScene = () => {
       scaleFactor,
     });
 
-    function toggleDoor() {
-      state.door.isLocked = !state.door.isLocked;
+    function registerSpin(direction: 1 | -1) {
+      const [spinsRequired, correctDirection] =
+        state.unlockCombination[state.playerInput.currentPair];
+
+      if (direction !== correctDirection) {
+        state.unlockCombination = generateCombination();
+        state.playerInput = getInitialPlayerInput();
+
+        disableButtons();
+        spinHandle({ spins: 60, duration: 2, onComplete: enableButtons });
+
+        return;
+      }
+
+      state.playerInput.currentSpins++;
+      if (state.playerInput.currentSpins !== spinsRequired) {
+        spinHandle({ spins: direction });
+
+        return;
+      }
+
+      if (state.playerInput.currentPair === state.unlockCombination.length - 1) {
+        disableButtons();
+        spinHandle({ spins: direction, onComplete: winGame });
+      } else {
+        spinHandle({ spins: direction });
+        state.playerInput.currentSpins = 0;
+        state.playerInput.currentPair++;
+      }
+    }
+
+    function setDoorLockState(isLocked: boolean) {
+      state.door.isLocked = isLocked;
 
       closedDoorGroup.visible = state.door.isLocked;
       openDoorGroup.visible = !state.door.isLocked;
     }
 
+    function winGame() {
+      state.timer.isRunning = false;
+      setDoorLockState(false);
+      playShineAnimation();
+      wait(5).then(startNewGame);
+    }
+
+    function startNewGame() {
+      setDoorLockState(true);
+      state = initializeVaultSceneState();
+      handleGroup.angle = state.door.handleAngle;
+      setTimerLabel(state.timer.totalElapsedMS);
+
+      spinHandle({
+        spins: 60,
+        duration: 2,
+        onComplete: () => {
+          enableButtons();
+          state.timer.isRunning = true;
+        },
+      });
+    }
+
     vaultScene.onTick = (elapsedMS) => {
-      if (state.door.isLocked) {
-        state.totalElapsedMS += elapsedMS;
-        // setTimerLabel(state.totalElapsedMS);
+      if (state.timer.isRunning) {
+        state.timer.totalElapsedMS += elapsedMS;
+        setTimerLabel(Math.min(state.timer.totalElapsedMS, 99990));
       }
     };
 
@@ -178,7 +258,7 @@ const createVaultScene = () => {
 
   function createClosedDoorGroup(
     options: GroupOptions & { onRightClick: () => void; onLeftClick: () => void }
-  ): Group {
+  ): ClosedDoorGroup {
     const { scaleFactor, parentContainer, onRightClick, onLeftClick } = options;
 
     const container = new Container();
@@ -207,14 +287,28 @@ const createVaultScene = () => {
       return button;
     };
 
-    const rotateLeftButton = createButton(onLeftClick);
-    const rotateRightButton = createButton(onRightClick);
-    rotateRightButton.x += rotateLeftButton.width + 50 * scaleFactor;
+    const doorLeftButton = createButton(onLeftClick);
+    const doorRightButton = createButton(onRightClick);
+    doorRightButton.x += doorLeftButton.width + 50 * scaleFactor;
 
-    container.addChild(rotateLeftButton);
-    container.addChild(rotateRightButton);
+    container.addChild(doorLeftButton);
+    container.addChild(doorRightButton);
 
-    return { container };
+    function disableButtons() {
+      doorLeftButton.interactive = false;
+      doorRightButton.interactive = false;
+      doorLeftButton.cursor = 'default';
+      doorRightButton.cursor = 'default';
+    }
+
+    function enableButtons() {
+      doorLeftButton.interactive = true;
+      doorRightButton.interactive = true;
+      doorLeftButton.cursor = 'pointer';
+      doorRightButton.cursor = 'pointer';
+    }
+
+    return { container, disableButtons, enableButtons };
   }
 
   function createHandleGroup(options: GroupOptions): HandleGroup {
@@ -242,20 +336,32 @@ const createVaultScene = () => {
     const motionBlurFilter = new MotionBlurFilter();
     container.filters = [motionBlurFilter];
 
-    function spinHandle(spinCount: number = 1, duration: number = 0.75) {
-      state.door.handleAngle += spinCount * 60;
+    function spinHandle({
+      spins,
+      duration = 0.5,
+      onComplete = () => {},
+    }: {
+      spins: number;
+      duration?: number;
+      onComplete?: () => void;
+    }) {
+      state.door.handleAngle += spins * 60;
 
       const timeline = gsap.timeline();
       timeline.to(container, {
         angle: state.door.handleAngle,
         onUpdate: function () {
-          motionBlurFilter.velocityX = Math.min(spinCount * (duration - this.time()), 20);
+          motionBlurFilter.velocityX = Math.min(
+            Math.abs(spins) * Math.max(duration - this.time() - 0.5, 0),
+            20
+          );
 
           const currentRadians = (container.angle * Math.PI) / 180;
           handleShadow.y = Math.cos(currentRadians) * shadowOffset;
           handleShadow.x = Math.sin(currentRadians) * shadowOffset;
         },
         ease: 'power3.out',
+        onComplete,
         duration,
       });
     }
@@ -282,7 +388,7 @@ const createVaultScene = () => {
 
     const elapsedTimeLabel = new Text({
       text: '0:00',
-      style: { fill: '#ffffff', fontSize: 80 * scaleFactor },
+      style: { fill: '#ffffff', fontSize: 72 * scaleFactor },
     });
 
     elapsedTimeLabel.anchor.set(0.5);
@@ -296,26 +402,40 @@ const createVaultScene = () => {
     return { container, setTimerLabel };
   }
 
-  initialize();
+  start();
   return vaultScene;
 };
 
 function initializeVaultSceneState(): VaultSceneState {
-  const getCombination = (): VaultCombination => {
-    return [
-      [4, -1],
-      [5, 1],
-    ]; // todo
-  };
-
   return {
-    totalElapsedMS: 0,
+    unlockCombination: generateCombination(),
+    timer: getInitialTimer(),
+    playerInput: getInitialPlayerInput(),
     door: {
       isLocked: true,
       handleAngle: 0,
-      unlockCombination: getCombination(),
     },
   };
+}
+
+function getInitialTimer() {
+  return { isRunning: false, totalElapsedMS: 0 };
+}
+
+function getInitialPlayerInput() {
+  return { currentPair: 0, currentSpins: 0 };
+}
+
+function generateCombination() {
+  const getRandomNumber = () => Math.floor(Math.random() * 9 + 1);
+  const combination: VaultCombination = [
+    [getRandomNumber(), 1],
+    [getRandomNumber(), -1],
+    [getRandomNumber(), 1],
+  ];
+  console.log(combination);
+
+  return combination;
 }
 
 export { createVaultScene };
