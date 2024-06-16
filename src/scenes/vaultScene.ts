@@ -9,7 +9,7 @@ import {
 } from '../utils/layout';
 import { wait } from '../utils/common';
 import { Text } from 'pixi.js';
-import { MotionBlurFilter } from 'pixi-filters';
+import { MotionBlurFilter, GodrayFilter } from 'pixi-filters';
 import { createAudioCollection } from '../core/audio';
 import gsap from 'gsap';
 
@@ -81,6 +81,15 @@ const createVaultScene = () => {
   const vaultScene = createScene();
   vaultScene.label = 'Vault Scene';
 
+  const godrayFilter = new GodrayFilter({
+    alpha: 0,
+    gain: 0.6,
+    lacunarity: 2,
+    parallel: false,
+  });
+
+  vaultScene.filters = [godrayFilter];
+
   function start() {
     state.timer.isRunning = true;
     const background = Sprite.from('bg.webp');
@@ -134,6 +143,15 @@ const createVaultScene = () => {
       scaleFactor,
     });
 
+    function playLightRaysAnimation() {
+      gsap.to(godrayFilter, {
+        alpha: 1,
+        yoyo: true,
+        repeat: 1,
+        duration: 2.5,
+      });
+    }
+
     function registerSpin(direction: 1 | -1) {
       const [spinsRequired, correctDirection] =
         state.unlockCombination[state.playerInput.currentPair];
@@ -180,6 +198,7 @@ const createVaultScene = () => {
       sounds.pause('bg.ogg');
       sounds.play('win.ogg');
       sounds.play('animeWowMeme.ogg');
+      playLightRaysAnimation();
 
       state.timer.isRunning = false;
       setDoorLockState(false);
@@ -252,7 +271,24 @@ const createVaultScene = () => {
 
     parentContainer.addChild(container);
 
-    const playShineAnimation = () => {};
+    const playShineAnimation = () => {
+      const stagger = 0.2;
+
+      gsap.to(blinks, {
+        duration: 1,
+        angle: '+=30',
+        ease: 'power3.out',
+        stagger,
+      });
+
+      gsap.to(blinks, {
+        duration: 2.25,
+        alpha: 1,
+        yoyo: true,
+        repeat: 1,
+        stagger,
+      });
+    };
 
     return { container, playShineAnimation };
   }
