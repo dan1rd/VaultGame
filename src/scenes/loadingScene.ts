@@ -1,5 +1,5 @@
 import { Graphics } from 'pixi.js';
-import { createScene } from '../core/Scene';
+import { createScene } from '../core/scene';
 import { WindowSize } from '../types/common';
 
 const createLoadingScene = () => {

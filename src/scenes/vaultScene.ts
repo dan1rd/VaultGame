@@ -1,5 +1,5 @@
 import { Container, Graphics, Sprite } from 'pixi.js';
-import { createScene } from '../core/Scene';
+import { createScene } from '../core/scene';
 import {
   scaleSprites,
   centerSprites,
@@ -10,7 +10,7 @@ import {
 import { wait } from '../utils/common';
 import { Text } from 'pixi.js';
 import { MotionBlurFilter } from 'pixi-filters';
-import { createAudioCollection } from '../core/Audio';
+import { createAudioCollection } from '../core/audio';
 import gsap from 'gsap';
 
 type VaultCombination = [number, 1 | -1][];
@@ -67,6 +67,7 @@ type KeypadGroup = Group & {
 const createVaultScene = () => {
   let state = initializeVaultSceneState();
   const sounds = createAudioCollection([
+    'animeWowMeme.ogg',
     'bg.ogg',
     'incorrectCode.ogg',
     'spinMultiple.ogg',
@@ -177,6 +178,7 @@ const createVaultScene = () => {
     function winGame() {
       sounds.pause('bg.ogg');
       sounds.play('win.ogg');
+      sounds.play('animeWowMeme.ogg');
 
       state.timer.isRunning = false;
       setDoorLockState(false);

@@ -1,10 +1,10 @@
 import './style.css';
 
-import { createGame } from './core/Game';
-import { initAssets, loadSceneAssets } from './core/Assets';
+import { createGame } from './core/game';
+import { initAssets, loadSceneAssets } from './core/assets';
 
-import { createLoadingScene } from './Scenes/LoadingScene';
-import { createVaultScene } from './Scenes/VaultScene';
+import { createLoadingScene } from './scenes/loadingScene';
+import { createVaultScene } from './scenes/vaultScene';
 
 async function main() {
   await initAssets();
@@ -13,7 +13,7 @@ async function main() {
   const loadingScene = createLoadingScene();
   game.setScene(loadingScene);
 
-  await loadSceneAssets('VaultScene');
+  await loadSceneAssets('vaultScene');
 
   const vaultScene = createVaultScene();
   game.setScene(vaultScene);

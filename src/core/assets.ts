@@ -16,11 +16,11 @@ interface Manifest {
 
 const getAssetsManifest = (): Manifest => {
   const bundles: Bundle[] = [];
-  const fileSources = Object.keys(import.meta.glob('/public/Assets/**/*.*'));
+  const fileSources = Object.keys(import.meta.glob('/public/**/*.*'));
 
   fileSources.forEach((src) => {
-    // todo - if there's time, refactor the parsing to be more adequate..
-    const [, , , bundleName, , assetAlias] = src.split('/');
+    const url = src.replace('/public/', '');
+    const [bundleName, , assetAlias] = url.split('/');
 
     let currentBundle = bundles.find((bundle) => bundle.name === bundleName);
     if (!currentBundle) {
@@ -29,7 +29,7 @@ const getAssetsManifest = (): Manifest => {
     }
 
     if (currentBundle.assets.findIndex((asset) => asset.alias === assetAlias) === -1) {
-      currentBundle.assets.push({ alias: assetAlias, src: src.replace('/public/', '') });
+      currentBundle.assets.push({ alias: assetAlias, src: url });
     }
   });
 

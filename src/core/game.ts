@@ -1,5 +1,5 @@
 import { Application } from 'pixi.js';
-import { Scene } from './Scene';
+import { Scene } from './scene';
 
 interface GameState {
   currentScene: Scene | null;
