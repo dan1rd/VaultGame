@@ -66,6 +66,7 @@ type KeypadGroup = Group & {
 
 const createVaultScene = () => {
   let state = initializeVaultSceneState();
+
   const sounds = createAudioCollection([
     'animeWowMeme.ogg',
     'bg.ogg',
@@ -75,11 +76,8 @@ const createVaultScene = () => {
     'vault.ogg',
     'win.ogg',
   ]);
-
   sounds.setVolume('bg.ogg', 0.35);
   sounds.play('bg.ogg', true);
-  const vaultScene = createScene();
-  vaultScene.label = 'Vault Scene';
 
   const godrayFilter = new GodrayFilter({
     alpha: 0,
@@ -88,7 +86,8 @@ const createVaultScene = () => {
     parallel: false,
   });
 
-  vaultScene.filters = [godrayFilter];
+  const vaultScene = createScene();
+  vaultScene.label = 'Vault Scene';
 
   function start() {
     state.timer.isRunning = true;
@@ -144,11 +143,15 @@ const createVaultScene = () => {
     });
 
     function playLightRaysAnimation() {
+      vaultScene.filters = [godrayFilter];
       gsap.to(godrayFilter, {
         alpha: 1,
         yoyo: true,
         repeat: 1,
         duration: 2.5,
+        onComplete: () => {
+          vaultScene.filters = [];
+        },
       });
     }
 
@@ -275,9 +278,9 @@ const createVaultScene = () => {
       const stagger = 0.2;
 
       gsap.to(blinks, {
-        duration: 1,
-        angle: '+=30',
-        ease: 'power3.out',
+        duration: 2,
+        angle: '+=60',
+        ease: 'power2.out',
         stagger,
       });
 
@@ -329,6 +332,7 @@ const createVaultScene = () => {
     setPivotToCenter([container]);
     centerContainer([container], parentContainer.width, parentContainer.height);
     container.x += 50 * scaleFactor;
+    container.y -= 30 * scaleFactor;
 
     parentContainer.addChild(container);
 
@@ -452,6 +456,7 @@ const createVaultScene = () => {
 
     const elapsedTimeLabel = new Text({
       text: '0:00',
+      resolution: 2,
       style: { fill: '#ffffff', fontSize: 72 * scaleFactor },
     });
 
@@ -497,7 +502,12 @@ function generateCombination() {
     [getRandomNumber(), -1],
     [getRandomNumber(), 1],
   ];
-  console.log(combination);
+
+  console.log(`
+${combination[0][0]} Clockwise
+${combination[1][0]} Counterclockwise
+${combination[2][0]} Clockwise
+  `);
 
   return combination;
 }
