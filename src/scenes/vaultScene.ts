@@ -164,9 +164,17 @@ const createVaultScene = () => {
 
         state.unlockCombination = generateCombination();
         state.playerInput = getInitialPlayerInput();
-
+        resetTimer();
         disableButtons();
-        spinHandle({ spins: 60, duration: 2, onComplete: enableButtons });
+
+        spinHandle({
+          spins: 60,
+          duration: 2,
+          onComplete: () => {
+            enableButtons();
+            state.timer.isRunning = true;
+          },
+        });
 
         return;
       }
@@ -215,7 +223,7 @@ const createVaultScene = () => {
       setDoorLockState(true);
       state = initializeVaultSceneState();
       handleGroup.angle = state.door.handleAngle;
-      setTimerLabel(state.timer.totalElapsedMS);
+      resetTimer();
 
       spinHandle({
         spins: 60,
@@ -225,6 +233,11 @@ const createVaultScene = () => {
           state.timer.isRunning = true;
         },
       });
+    }
+
+    function resetTimer() {
+      state.timer = getInitialTimer();
+      setTimerLabel(state.timer.totalElapsedMS);
     }
 
     vaultScene.onTick = (elapsedMS) => {
